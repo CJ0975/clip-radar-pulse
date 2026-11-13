@@ -1,0 +1,31 @@
+# See README.md. Hourly: poke CJ0975/clip-radar if its last scan is overdue.
+name: Pulse
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Poke the radar even if it is fresh (tests the chain)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: pulse
+  cancel-in-progress: false
+jobs:
+  pulse:
+    name: Check the radar
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+      - name: Poke the radar if it is overdue
+        env:
+          RADAR_PAT: ${{ secrets.RADAR_PAT }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FORCE: ${{ inputs.force }}
+        run: python3 tools/pulse.py
