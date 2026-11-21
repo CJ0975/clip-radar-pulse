@@ -1,41 +1,13 @@
-# Clip Radar Pulse
+# clip-radar-pulse — retired
 
-A public helper for [clip-radar](https://github.com/CJ0975/clip-radar) (private).
-It exists for one reason: **a scanner cannot notice its own silence.**
+This hourly watchdog used to live here so that its Actions minutes would be
+free. It read the private clip-radar repo with a fine-grained personal access
+token, which expired on 2026-11-19: every hourly check since then failed with
+HTTP 401 and messaged about it, which is the opposite of a safety net.
 
-GitHub runs scheduled workflows on a best-effort queue. Runs can be delayed by
-tens of minutes, dropped entirely, or — on a brand-new private repository — never
-registered at all. That is exactly what happened here: clip-radar's first six
-hours produced zero `schedule` runs while `workflow_dispatch` worked fine.
+The watchdog now lives inside the radar repo as
+[`heartbeat.yml`](https://github.com/CJ0975/clip-radar/blob/main/.github/workflows/heartbeat.yml),
+where it reads the state file from the same checkout and authorises with the
+run's own `GITHUB_TOKEN`. Nothing to rotate, nothing to expire.
 
-## What this does
-
-Once an hour (`17 * * * *`), [`tools/pulse.py`](tools/pulse.py):
-
-1. reads `health.last_run` out of the radar's committed `data/state.json`;
-2. if the last scan is **less than 3.5 hours old** → does nothing;
-3. if it is **older** → `POST /repos/CJ0975/clip-radar/dispatches` with
-   `event_type: pulse`, which starts a scan immediately;
-4. if it cannot read the state file or the dispatch fails → **says so on
-   Telegram**, because a backstop that fails silently is worse than none.
-
-Because the radar dedupes by campaign id, an extra poke can never produce a
-duplicate alert. The worst case is one wasted scan.
-
-## Secrets
-
-| Secret | Why |
-|---|---|
-| `RADAR_PAT` | Fine-grained token with access to clip-radar, to read the state file and dispatch |
-| `TELEGRAM_BOT_TOKEN` | Only used to report *pulse failures* |
-| `TELEGRAM_CHAT_ID` | Where those failure reports go |
-
-Nothing in this repository is secret, and fork pull requests never receive
-secrets.
-
-## Manual test
-
-**Actions → Pulse → Run workflow → force: true** starts a scan regardless of how
-fresh the radar looks, which is the quickest way to check the whole chain.
-
-Licence: do whatever you like.
+This repository can be deleted.
